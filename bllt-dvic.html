@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLLT — Driver Vehicle Inspection</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --surface: #161a1f;
+    --surface2: #1e2329;
+    --border: #2a3040;
+    --accent: #f5a623;
+    --accent2: #e8441a;
+    --text: #e8eaf0;
+    --text-muted: #7a8394;
+    --success: #2ecc71;
+    --error: #e74c3c;
+    --warning: #f39c12;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    padding: 0 2.5rem;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      -55deg,
+      transparent,
+      transparent 18px,
+      rgba(245,166,35,0.04) 18px,
+      rgba(245,166,35,0.04) 19px
+    );
+    pointer-events: none;
+  }
+  .logo-block {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.4rem 0;
+    z-index: 1;
+  }
+  .logo-mark {
+    width: 48px;
+    height: 48px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: #000;
+    letter-spacing: 1px;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    flex-shrink: 0;
+  }
+  .logo-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    letter-spacing: 6px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .logo-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    z-index: 1;
+  }
+  .date-display {
+    text-align: right;
+  }
+  .date-display .date {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+  .date-display .time {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.4rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+    font-weight: 500;
+  }
+  .status-pill {
+    background: rgba(46,204,113,0.12);
+    border: 1px solid var(--success);
+    color: var(--success);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    padding: 5px 14px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ── NAV TABS ── */
+  nav {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    padding: 0 2.5rem;
+    gap: 0;
+  }
+  .nav-tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 1rem 1.8rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    border: none;
+    background: none;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+    top: 1px;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── MAIN ── */
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem 4rem;
+  }
+
+  /* ── PAGES ── */
+  .page { display: none; animation: fadeIn 0.3s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .section-badge {
+    background: var(--accent);
+    color: #000;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    padding: 4px 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.9rem;
+    letter-spacing: 3px;
+    color: var(--text);
+  }
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.8rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--accent);
+  }
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.4rem;
+  }
+
+  /* ── FORM GRID ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+  }
+  .form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .span2 { grid-column: span 2; }
+
+  .field { display: flex; flex-direction: column; gap: 0.45rem; }
+  .field label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .field label span.req { color: var(--accent2); margin-left: 3px; }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    padding: 0.7rem 1rem;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(245,166,35,0.1);
+  }
+  input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 0.5; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8394' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem; }
+  textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+
+  /* ── TRIP TYPE TOGGLE ── */
+  .trip-toggle {
+    display: flex;
+    gap: 0;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    width: fit-content;
+  }
+  .trip-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 0.8rem 2rem;
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--text-muted);
+    border: none;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .trip-btn .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .trip-btn.active-pre {
+    background: rgba(46,204,113,0.15);
+    color: var(--success);
+  }
+  .trip-btn.active-pre .dot { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .trip-btn.active-post {
+    background: rgba(232,68,26,0.15);
+    color: var(--accent2);
+  }
+  .trip-btn.active-post .dot { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+
+  /* ── CHECKLIST ── */
+  .checklist {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg);
+    user-select: none;
+  }
+  .check-item:hover { border-color: var(--accent); background: rgba(245,166,35,0.04); }
+  .check-item.checked {
+    border-color: var(--success);
+    background: rgba(46,204,113,0.06);
+  }
+  .check-item.issue {
+    border-color: var(--accent2);
+    background: rgba(232,68,26,0.06);
+  }
+  .check-box {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 11px;
+    transition: all 0.2s;
+  }
+  .check-item.checked .check-box { border-color: var(--success); background: var(--success); color: #000; }
+  .check-item.issue .check-box { border-color: var(--accent2); background: var(--accent2); color: #fff; }
+  .check-label {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
+  }
+  .check-item.checked .check-label,
+  .check-item.issue .check-label { color: var(--text); }
+  .check-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 0.9rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-dot.ok { background: var(--success); }
+  .legend-dot.flag { background: var(--accent2); }
+
+  /* ── PHOTO UPLOAD ── */
+  .photo-zones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  .photo-zone {
+    position: relative;
+    border: 2px dashed var(--border);
+    border-radius: 4px;
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .photo-zone:hover {
+    border-color: var(--accent);
+    background: rgba(245,166,35,0.04);
+  }
+  .photo-zone.has-image { border-style: solid; border-color: var(--accent); }
+  .photo-zone input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+    border: none; background: none; padding: 0;
+  }
+  .photo-preview {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .photo-overlay {
+    position: absolute; inset: 0;
+    background: rgba(13,15,18,0.7);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .photo-zone:hover .photo-overlay { opacity: 1; }
+  .zone-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: 0.8rem;
+    text-align: center;
+    padding: 0 0.5rem;
+  }
+  .zone-icon {
+    font-size: 1.6rem;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+  }
+  .photo-count-badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: var(--accent);
+    color: #000;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 2px;
+    display: none;
+    z-index: 2;
+  }
+  .photo-zone.has-image .photo-count-badge { display: block; }
+
+  /* ── MAINTENANCE ISSUES ── */
+  .issue-list { display: flex; flex-direction: column; gap: 0.8rem; }
+  .issue-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.8rem;
+    align-items: center;
+    padding: 0.9rem 1rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    animation: fadeIn 0.2s ease;
+  }
+  .issue-row select { font-size: 0.88rem; }
+  .issue-row textarea {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.88rem;
+    resize: none;
+  }
+  .del-btn {
+    background: rgba(231,76,60,0.12);
+    border: 1px solid rgba(231,76,60,0.3);
+    color: var(--error);
+    width: 32px; height: 32px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .del-btn:hover { background: rgba(231,76,60,0.25); }
+
+  .add-issue-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: none;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 0.7rem 1.2rem;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    margin-top: 0.5rem;
+    justify-content: center;
+  }
+  .add-issue-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── ODOMETER SECTION ── */
+  .odometer-display {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1.2rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .odo-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .odo-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 2rem;
+    color: var(--accent);
+    letter-spacing: 4px;
+    flex: 1;
+    text-align: right;
+  }
+
+  /* ── SUBMIT BUTTON ── */
+  .submit-area {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .driver-sig {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+  }
+  .submit-btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 5px;
+    padding: 0.9rem 3rem;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    cursor: pointer;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .submit-btn::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.2s;
+  }
+  .submit-btn:hover::after { background: rgba(255,255,255,0.15); }
+  .submit-btn:active { transform: scale(0.97); }
+
+  /* ── HISTORY PAGE ── */
+  .history-filters {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 0.5rem 1.2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover, .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #000; }
+  .filter-search {
+    flex: 1;
+    min-width: 200px;
+  }
+  .filter-search input {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    height: 100%;
+  }
+
+  .log-entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1.2rem;
+    align-items: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .log-entry:hover { border-color: var(--accent); }
+  .log-type-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+    width: 60px;
+    text-align: center;
+  }
+  .badge-pre { background: rgba(46,204,113,0.15); color: var(--success); border: 1px solid rgba(46,204,113,0.3); }
+  .badge-post { background: rgba(232,68,26,0.12); color: var(--accent2); border: 1px solid rgba(232,68,26,0.3); }
+  .log-info { }
+  .log-van {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .log-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    letter-spacing: 1px;
+  }
+  .log-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+  }
+  .issue-flag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    color: var(--warning);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
+  .empty-state p { font-family: 'DM Mono', monospace; font-size: 0.78rem; letter-spacing: 2px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 2rem; right: 2rem;
+    background: var(--success);
+    color: #000;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 1rem 2rem;
+    border-radius: 3px;
+    transform: translateY(150%);
+    transition: transform 0.3s ease;
+    z-index: 100;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .toast.show { transform: translateY(0); }
+  .toast.error { background: var(--error); color: #fff; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 1.2rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  footer .f-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 4px;
+    color: var(--text-muted);
+  }
+  footer .f-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    opacity: 0.6;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    header { padding: 0 1.2rem; }
+    main { padding: 1.5rem 1rem 3rem; }
+    nav { padding: 0 1rem; overflow-x: auto; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid.three { grid-template-columns: 1fr; }
+    .span2 { grid-column: span 1; }
+    .photo-zones { grid-template-columns: repeat(2, 1fr); }
+    .checklist { grid-template-columns: 1fr; }
+    .logo-text { font-size: 2rem; }
+    .issue-row { grid-template-columns: 1fr; }
+    .submit-area { flex-direction: column; gap: 1rem; text-align: center; }
+    .submit-btn { width: 100%; }
+    .log-entry { grid-template-columns: auto 1fr; }
+    .log-status { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <div class="logo-mark">B</div>
+    <div>
+      <div class="logo-text">BLLT</div>
+      <div class="logo-sub">Fleet Inspection System</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="date-display">
+      <div class="date" id="headerDate">—</div>
+      <div class="time" id="headerTime">—</div>
+    </div>
+    <div class="status-pill">● Online</div>
+  </div>
+</header>
+
+<nav>
+  <button class="nav-tab active" onclick="switchPage('inspection')">Inspection Form</button>
+  <button class="nav-tab" onclick="switchPage('history')">Log History</button>
+</nav>
+
+<main>
+
+  <!-- PAGE: INSPECTION FORM -->
+  <div class="page active" id="page-inspection">
+
+    <!-- Trip Type -->
+    <div class="trip-toggle">
+      <button class="trip-btn active-pre" id="btnPre" onclick="setTripType('pre')">
+        <span class="dot"></span> Pre-Trip
+      </button>
+      <button class="trip-btn" id="btnPost" onclick="setTripType('post')">
+        <span class="dot"></span> Post-Trip
+      </button>
+    </div>
+
+    <!-- Vehicle Info -->
+    <div class="card">
+      <div class="card-title">▸ Vehicle Information</div>
+      <div class="form-grid three">
+        <div class="field">
+          <label>Van Number <span class="req">*</span></label>
+          <input type="text" id="vanNumber" placeholder="e.g. VAN-042">
+        </div>
+        <div class="field">
+          <label>Make <span class="req">*</span></label>
+          <select id="vanMake" onchange="updateMakeModel()">
+            <option value="">Select Make</option>
+            <option>Ford</option>
+            <option>Mercedes-Benz</option>
+            <option>Ram</option>
+            <option>Chevrolet</option>
+            <option>GMC</option>
+            <option>Dodge</option>
+            <option>Nissan</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Model <span class="req">*</span></label>
+          <select id="vanModel">
+            <option value="">Select Model</option>
+          </select>
+        </div>
+        <div class="field span2">
+          <label>VIN Number <span class="req">*</span></label>
+          <input type="text" id="vinNumber" placeholder="17-character VIN" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:2px;text-transform:uppercase">
+        </div>
+        <div class="field">
+          <label>Driver Name <span class="req">*</span></label>
+          <input type="text" id="driverName" placeholder="Full name">
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top:1.2rem">
+        <div class="field">
+          <label>Inspection Date <span class="req">*</span></label>
+          <input type="date" id="inspDate">
+        </div>
+        <div class="field">
+          <label>Inspection Time</label>
+          <input type="time" id="inspTime">
+        </div>
+      </div>
+
+      <!-- Odometer -->
+      <div class="odometer-display" style="margin-top:1.4rem">
+        <div class="odo-label">Odometer</div>
+        <input type="number" id="odometer" placeholder="Current mileage" style="flex:1;text-align:right;font-family:'DM Mono',monospace;font-size:1.5rem;letter-spacing:3px;border:none;background:transparent;color:var(--accent);outline:none;" oninput="this.style.color=this.value?'var(--accent)':'var(--text-muted)'">
+        <span style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--text-muted);letter-spacing:2px">MI</span>
+      </div>
+    </div>
+
+    <!-- Inspection Checklist -->
+    <div class="card">
+      <div class="card-title">▸ Inspection Checklist</div>
+      <div class="check-legend">
+        <div class="legend-item" onclick="markAll('ok')"><span class="legend-dot ok"></span> Click = OK / Pass</div>
+        <div class="legend-item" onclick="markAll('issue')"><span class="legend-dot flag"></span> Double-click = Flag Issue</div>
+      </div>
+      <div class="checklist" id="checklist">
+        <!-- JS populates -->
+      </div>
+    </div>
+
+    <!-- Photo Upload -->
+    <div class="card">
+      <div class="card-title">▸ Vehicle Photos</div>
+      <p style="font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:1.2rem;">UPLOAD IMAGES OF FRONT, REAR, SIDES, AND ANY DAMAGE</p>
+      <div class="photo-zones" id="photoZones">
+        <!-- JS populates -->
+      </div>
+    </div>
+
+    <!-- Maintenance Issues -->
+    <div class="card">
+      <div class="card-title">▸ Maintenance Issues</div>
+      <p style="font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:1.2rem;">LIST ANY ISSUES THAT NEED TO BE ADDRESSED</p>
+      <div class="issue-list" id="issueList"></div>
+      <button class="add-issue-btn" onclick="addIssue()">＋ Add Maintenance Issue</button>
+    </div>
+
+    <!-- Additional Notes -->
+    <div class="card">
+      <div class="card-title">▸ Additional Notes</div>
+      <div class="field">
+        <textarea id="additionalNotes" placeholder="Any other observations or comments about the vehicle…"></textarea>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-area">
+      <div class="driver-sig" id="sigLine">Driver signature pending…</div>
+      <button class="submit-btn" onclick="submitForm()">Submit Inspection ▶</button>
+    </div>
+
+  </div><!-- end page-inspection -->
+
+  <!-- PAGE: HISTORY -->
+  <div class="page" id="page-history">
+    <div class="section-header">
+      <div class="section-badge">Log</div>
+      <div class="section-title">Inspection History</div>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="history-filters">
+      <button class="filter-btn active" onclick="filterLog('all', this)">All</button>
+      <button class="filter-btn" onclick="filterLog('pre', this)">Pre-Trip</button>
+      <button class="filter-btn" onclick="filterLog('post', this)">Post-Trip</button>
+      <button class="filter-btn" onclick="filterLog('issues', this)">Has Issues</button>
+      <div class="filter-search">
+        <input type="text" placeholder="Search by van # or driver…" oninput="searchLog(this.value)">
+      </div>
+    </div>
+
+    <div id="logContainer"></div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  <div class="f-brand">BLLT Fleet</div>
+  <div class="f-note">Driver Vehicle Inspection Checklist — All records stored locally</div>
+</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+const MODELS = {
+  'Ford': ['Transit', 'Transit Connect', 'E-Series', 'Transit-150', 'Transit-250', 'Transit-350'],
+  'Mercedes-Benz': ['Sprinter', 'Metris', 'Sprinter 1500', 'Sprinter 2500', 'Sprinter 3500'],
+  'Ram': ['ProMaster', 'ProMaster City', 'ProMaster 1500', 'ProMaster 2500', 'ProMaster 3500'],
+  'Chevrolet': ['Express', 'Express 1500', 'Express 2500', 'Express 3500'],
+  'GMC': ['Savana', 'Savana 1500', 'Savana 2500', 'Savana 3500'],
+  'Dodge': ['Grand Caravan', 'Caravan'],
+  'Nissan': ['NV', 'NV Cargo', 'NV Passenger', 'NV200'],
+  'Other': ['Other']
+};
+
+const CHECKLIST_ITEMS = [
+  'Headlights', 'Taillights', 'Turn Signals', 'Brake Lights',
+  'Hazard Lights', 'Windshield Wipers', 'Horn', 'Mirrors',
+  'Tires (All 4)', 'Tire Pressure', 'Brakes', 'Fuel Level',
+  'Engine Oil', 'Coolant Level', 'Washer Fluid', 'Battery',
+  'Seatbelts', 'Dashboard Warnings', 'A/C & Heat', 'Cargo Area',
+  'Cargo Doors', 'Driver Door', 'Windows', 'Exterior Damage'
+];
+
+const PHOTO_ZONES_DEF = ['Front', 'Rear', 'Driver Side', 'Passenger Side', 'Interior / Cargo', 'Damage (If Any)'];
+
+const ISSUE_TYPES = ['Engine', 'Transmission', 'Brakes', 'Tires', 'Lights', 'Body Damage', 'Electrical', 'HVAC', 'Fuel System', 'Suspension', 'Exhaust', 'Fluids', 'Safety Equipment', 'Other'];
+const PRIORITY = ['Low', 'Medium', 'High', 'Critical'];
+
+let tripType = 'pre';
+let checkStates = {}; // item: 'ok' | 'issue' | ''
+let logs = JSON.parse(localStorage.getItem('bllt_logs') || '[]');
+let currentFilter = 'all';
+let currentSearch = '';
+
+// ── CLOCK ──────────────────────────────────────────────────────────────
+function tick() {
+  const now = new Date();
+  document.getElementById('headerTime').textContent =
+    now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  document.getElementById('headerDate').textContent =
+    now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' }).toUpperCase();
+}
+tick(); setInterval(tick, 1000);
+
+// Pre-fill date/time
+(function() {
+  const now = new Date();
+  document.getElementById('inspDate').value = now.toISOString().split('T')[0];
+  document.getElementById('inspTime').value = now.toTimeString().slice(0,5);
+})();
+
+// Driver name → sig line
+document.getElementById('driverName').addEventListener('input', function() {
+  document.getElementById('sigLine').textContent =
+    this.value ? `Submitted by: ${this.value}` : 'Driver signature pending…';
+});
+
+// ── PAGES ──────────────────────────────────────────────────────────────
+function switchPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-tab')[id === 'inspection' ? 0 : 1].classList.add('active');
+  if (id === 'history') renderLog();
+}
+
+// ── TRIP TYPE ──────────────────────────────────────────────────────────
+function setTripType(type) {
+  tripType = type;
+  document.getElementById('btnPre').className = 'trip-btn' + (type === 'pre' ? ' active-pre' : '');
+  document.getElementById('btnPost').className = 'trip-btn' + (type === 'post' ? ' active-post' : '');
+}
+
+// ── MAKE/MODEL ─────────────────────────────────────────────────────────
+function updateMakeModel() {
+  const make = document.getElementById('vanMake').value;
+  const sel = document.getElementById('vanModel');
+  sel.innerHTML = '<option value="">Select Model</option>';
+  if (MODELS[make]) {
+    MODELS[make].forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+// ── CHECKLIST ──────────────────────────────────────────────────────────
+function buildChecklist() {
+  const el = document.getElementById('checklist');
+  el.innerHTML = '';
+  CHECKLIST_ITEMS.forEach(item => {
+    checkStates[item] = '';
+    const div = document.createElement('div');
+    div.className = 'check-item';
+    div.dataset.item = item;
+    div.innerHTML = `<div class="check-box"></div><span class="check-label">${item}</span>`;
+    div.addEventListener('click', () => cycleCheck(item));
+    el.appendChild(div);
+  });
+}
+
+function cycleCheck(item) {
+  const states = ['', 'ok', 'issue'];
+  const cur = checkStates[item] || '';
+  const next = states[(states.indexOf(cur) + 1) % states.length];
+  checkStates[item] = next;
+  const div = document.querySelector(`[data-item="${item}"]`);
+  div.className = 'check-item' + (next === 'ok' ? ' checked' : next === 'issue' ? ' issue' : '');
+  div.querySelector('.check-box').textContent = next === 'ok' ? '✓' : next === 'issue' ? '!' : '';
+}
+
+function markAll(state) {
+  CHECKLIST_ITEMS.forEach(item => {
+    checkStates[item] = state;
+    const div = document.querySelector(`[data-item="${item}"]`);
+    if (div) {
+      div.className = 'check-item' + (state === 'ok' ? ' checked' : ' issue');
+      div.querySelector('.check-box').textContent = state === 'ok' ? '✓' : '!';
+    }
+  });
+}
+
+buildChecklist();
+
+// ── PHOTOS ─────────────────────────────────────────────────────────────
+function buildPhotoZones() {
+  const container = document.getElementById('photoZones');
+  PHOTO_ZONES_DEF.forEach((label, i) => {
+    const zone = document.createElement('div');
+    zone.className = 'photo-zone';
+    zone.id = `zone-${i}`;
+    zone.innerHTML = `
+      <input type="file" accept="image/*" multiple onchange="handlePhoto(${i}, this)">
+      <span class="photo-count-badge" id="badge-${i}">0</span>
+      <div class="zone-icon">📷</div>
+      <div class="zone-label">${label}</div>
+      <div class="photo-overlay" style="color:#fff;font-family:'DM Mono',monospace;font-size:0.72rem;letter-spacing:2px">CHANGE</div>
+    `;
+    container.appendChild(zone);
+  });
+}
+
+function handlePhoto(idx, input) {
+  if (!input.files.length) return;
+  const zone = document.getElementById(`zone-${idx}`);
+  const badge = document.getElementById(`badge-${idx}`);
+  zone.classList.add('has-image');
+  badge.textContent = input.files.length;
+  const reader = new FileReader();
+  reader.onload = e => {
+    let preview = zone.querySelector('.photo-preview');
+    if (!preview) {
+      preview = document.createElement('img');
+      preview.className = 'photo-preview';
+      zone.insertBefore(preview, zone.firstChild);
+    }
+    preview.src = e.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+buildPhotoZones();
+
+// ── ISSUES ─────────────────────────────────────────────────────────────
+let issueCount = 0;
+
+function addIssue(type = '', desc = '', priority = '') {
+  issueCount++;
+  const id = `issue-${issueCount}`;
+  const list = document.getElementById('issueList');
+  const row = document.createElement('div');
+  row.className = 'issue-row';
+  row.id = id;
+  row.innerHTML = `
+    <select id="${id}-type">
+      <option value="">— Category —</option>
+      ${ISSUE_TYPES.map(t => `<option ${t===type?'selected':''}>${t}</option>`).join('')}
+    </select>
+    <textarea id="${id}-desc" placeholder="Describe the issue…">${desc}</textarea>
+    <div style="display:flex;flex-direction:column;gap:0.5rem">
+      <select id="${id}-priority" style="font-size:0.78rem;padding:0.3rem 0.6rem;">
+        ${PRIORITY.map(p => `<option ${p===priority?'selected':''}>${p}</option>`).join('')}
+      </select>
+      <button class="del-btn" onclick="removeIssue('${id}')">✕</button>
+    </div>
+  `;
+  list.appendChild(row);
+}
+
+function removeIssue(id) {
+  const el = document.getElementById(id);
+  if (el) { el.style.opacity='0'; el.style.transform='scale(0.95)'; el.style.transition='all 0.2s'; setTimeout(()=>el.remove(), 200); }
+}
+
+// ── SUBMIT ─────────────────────────────────────────────────────────────
+function submitForm() {
+  const req = ['vanNumber','vanMake','vanModel','vinNumber','driverName','inspDate'];
+  for (const id of req) {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) {
+      el.style.borderColor = 'var(--error)';
+      el.focus();
+      showToast('Please fill all required fields', 'error');
+      setTimeout(()=>el.style.borderColor='', 2500);
+      return;
+    }
+  }
+  if (document.getElementById('vinNumber').value.length < 17) {
+    document.getElementById('vinNumber').style.borderColor = 'var(--error)';
+    showToast('VIN must be 17 characters', 'error');
+    setTimeout(()=>document.getElementById('vinNumber').style.borderColor='', 2500);
+    return;
+  }
+
+  // Collect issues
+  const issues = [];
+  document.querySelectorAll('.issue-row').forEach(row => {
+    const t = row.querySelector('[id$="-type"]').value;
+    const d = row.querySelector('[id$="-desc"]').value;
+    const p = row.querySelector('[id$="-priority"]').value;
+    if (t || d) issues.push({ type: t, desc: d, priority: p });
+  });
+
+  // Collect flagged checklist items
+  const flagged = Object.entries(checkStates).filter(([,v])=>v==='issue').map(([k])=>k);
+
+  const entry = {
+    id: Date.now(),
+    tripType,
+    vanNumber: document.getElementById('vanNumber').value.trim().toUpperCase(),
+    make: document.getElementById('vanMake').value,
+    model: document.getElementById('vanModel').value,
+    vin: document.getElementById('vinNumber').value.toUpperCase(),
+    driver: document.getElementById('driverName').value.trim(),
+    date: document.getElementById('inspDate').value,
+    time: document.getElementById('inspTime').value,
+    odometer: document.getElementById('odometer').value,
+    checkStates: {...checkStates},
+    flagged,
+    issues,
+    notes: document.getElementById('additionalNotes').value.trim(),
+    hasIssues: issues.length > 0 || flagged.length > 0
+  };
+
+  logs.unshift(entry);
+  localStorage.setItem('bllt_logs', JSON.stringify(logs));
+  showToast('Inspection submitted successfully ✓');
+  resetForm();
+}
+
+function resetForm() {
+  ['vanNumber','vinNumber','driverName','odometer','additionalNotes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('vanMake').value = '';
+  document.getElementById('vanModel').innerHTML = '<option value="">Select Model</option>';
+  const now = new Date();
+  document.getElementById('inspDate').value = now.toISOString().split('T')[0];
+  document.getElementById('inspTime').value = now.toTimeString().slice(0,5);
+  document.getElementById('sigLine').textContent = 'Driver signature pending…';
+  checkStates = {};
+  buildChecklist();
+  document.getElementById('photoZones').innerHTML = '';
+  buildPhotoZones();
+  document.getElementById('issueList').innerHTML = '';
+  issueCount = 0;
+  setTripType('pre');
+}
+
+// ── LOG HISTORY ────────────────────────────────────────────────────────
+function renderLog() {
+  const container = document.getElementById('logContainer');
+  let filtered = logs.filter(l => {
+    if (currentFilter === 'pre') return l.tripType === 'pre';
+    if (currentFilter === 'post') return l.tripType === 'post';
+    if (currentFilter === 'issues') return l.hasIssues;
+    return true;
+  });
+  if (currentSearch) {
+    const s = currentSearch.toLowerCase();
+    filtered = filtered.filter(l =>
+      l.vanNumber.toLowerCase().includes(s) || l.driver.toLowerCase().includes(s)
+    );
+  }
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>No inspection records found</p></div>`;
+    return;
+  }
+  container.innerHTML = filtered.map(l => {
+    const dateStr = l.date ? new Date(l.date + 'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    return `<div class="log-entry" onclick="viewEntry(${l.id})">
+      <div class="log-type-badge badge-${l.tripType}">${l.tripType}</div>
+      <div class="log-info">
+        <div class="log-van">VAN ${l.vanNumber} — ${l.make} ${l.model}</div>
+        <div class="log-meta">${l.driver} · ${dateStr}${l.time ? ' · '+l.time : ''}${l.odometer ? ' · '+Number(l.odometer).toLocaleString()+' mi' : ''}</div>
+      </div>
+      <div class="log-status">
+        ${l.hasIssues ? `<div class="issue-flag">⚠ ${l.issues.length + l.flagged.length} issue(s)</div>` : '<div style="font-family:DM Mono,monospace;font-size:0.65rem;color:var(--success);letter-spacing:1.5px">✓ No Issues</div>'}
+        <div style="font-family:DM Mono,monospace;font-size:0.62rem;color:var(--text-muted);letter-spacing:1px">VIN: ${(l.vin||'').slice(0,8)}…</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewEntry(id) {
+  const l = logs.find(x => x.id === id);
+  if (!l) return;
+  const msg = [
+    `${l.tripType.toUpperCase()}-TRIP INSPECTION`,
+    `Van: ${l.vanNumber} | ${l.make} ${l.model}`,
+    `VIN: ${l.vin}`,
+    `Driver: ${l.driver}`,
+    `Date: ${l.date} ${l.time}`,
+    l.odometer ? `Odometer: ${Number(l.odometer).toLocaleString()} mi` : '',
+    l.flagged.length ? `\nFlagged Items: ${l.flagged.join(', ')}` : '',
+    l.issues.length ? `\nMaintenance Issues:\n${l.issues.map(i=>`  [${i.priority}] ${i.type}: ${i.desc}`).join('\n')}` : '',
+    l.notes ? `\nNotes: ${l.notes}` : ''
+  ].filter(Boolean).join('\n');
+  alert(msg);
+}
+
+function filterLog(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLog();
+}
+
+function searchLog(val) {
+  currentSearch = val;
+  renderLog();
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type === 'error' ? ' error' : '') + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
