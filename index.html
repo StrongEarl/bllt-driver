@@ -372,78 +372,7 @@
   .legend-dot.ok { background: var(--success); }
   .legend-dot.flag { background: var(--accent2); }
 
-  /* ── PHOTO UPLOAD ── */
-  .photo-zones {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-  }
-  .photo-zone {
-    position: relative;
-    border: 2px dashed var(--border);
-    border-radius: 4px;
-    aspect-ratio: 4/3;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    overflow: hidden;
-    background: var(--bg);
-  }
-  .photo-zone:hover {
-    border-color: var(--accent);
-    background: rgba(245,166,35,0.04);
-  }
-  .photo-zone.has-image { border-style: solid; border-color: var(--accent); }
-  .photo-zone input[type="file"] {
-    position: absolute; inset: 0;
-    opacity: 0; cursor: pointer;
-    width: 100%; height: 100%;
-    border: none; background: none; padding: 0;
-  }
-  .photo-preview {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-  }
-  .photo-overlay {
-    position: absolute; inset: 0;
-    background: rgba(13,15,18,0.7);
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; transition: opacity 0.2s;
-  }
-  .photo-zone:hover .photo-overlay { opacity: 1; }
-  .zone-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 2px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    margin-top: 0.8rem;
-    text-align: center;
-    padding: 0 0.5rem;
-  }
-  .zone-icon {
-    font-size: 1.6rem;
-    color: var(--text-muted);
-    margin-bottom: 0.3rem;
-  }
-  .photo-count-badge {
-    position: absolute;
-    top: 8px; right: 8px;
-    background: var(--accent);
-    color: #000;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 2px;
-    display: none;
-    z-index: 2;
-  }
-  .photo-zone.has-image .photo-count-badge { display: block; }
+
 
   /* ── MAINTENANCE ISSUES ── */
   .issue-list { display: flex; flex-direction: column; gap: 0.8rem; }
@@ -714,7 +643,7 @@
     .form-grid { grid-template-columns: 1fr; }
     .form-grid.three { grid-template-columns: 1fr; }
     .span2 { grid-column: span 1; }
-    .photo-zones { grid-template-columns: repeat(2, 1fr); }
+
     .checklist { grid-template-columns: 1fr; }
     .logo-text { font-size: 2rem; }
     .issue-row { grid-template-columns: 1fr; }
@@ -832,14 +761,7 @@
       </div>
     </div>
 
-    <!-- Photo Upload -->
-    <div class="card">
-      <div class="card-title">▸ Vehicle Photos</div>
-      <p style="font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:1.2rem;">UPLOAD IMAGES OF FRONT, REAR, SIDES, AND ANY DAMAGE</p>
-      <div class="photo-zones" id="photoZones">
-        <!-- JS populates -->
-      </div>
-    </div>
+
 
     <!-- Maintenance Issues -->
     <div class="card">
@@ -917,7 +839,7 @@ const CHECKLIST_ITEMS = [
   'Cargo Doors', 'Driver Door', 'Windows', 'Exterior Damage'
 ];
 
-const PHOTO_ZONES_DEF = ['Front', 'Rear', 'Driver Side', 'Passenger Side', 'Interior / Cargo', 'Damage (If Any)'];
+
 
 const ISSUE_TYPES = ['Engine', 'Transmission', 'Brakes', 'Tires', 'Lights', 'Body Damage', 'Electrical', 'HVAC', 'Fuel System', 'Suspension', 'Exhaust', 'Fluids', 'Safety Equipment', 'Other'];
 const PRIORITY = ['Low', 'Medium', 'High', 'Critical'];
@@ -1018,45 +940,6 @@ function markAll(state) {
 }
 
 buildChecklist();
-
-// ── PHOTOS ─────────────────────────────────────────────────────────────
-function buildPhotoZones() {
-  const container = document.getElementById('photoZones');
-  PHOTO_ZONES_DEF.forEach((label, i) => {
-    const zone = document.createElement('div');
-    zone.className = 'photo-zone';
-    zone.id = `zone-${i}`;
-    zone.innerHTML = `
-      <input type="file" accept="image/*" multiple onchange="handlePhoto(${i}, this)">
-      <span class="photo-count-badge" id="badge-${i}">0</span>
-      <div class="zone-icon">📷</div>
-      <div class="zone-label">${label}</div>
-      <div class="photo-overlay" style="color:#fff;font-family:'DM Mono',monospace;font-size:0.72rem;letter-spacing:2px">CHANGE</div>
-    `;
-    container.appendChild(zone);
-  });
-}
-
-function handlePhoto(idx, input) {
-  if (!input.files.length) return;
-  const zone = document.getElementById(`zone-${idx}`);
-  const badge = document.getElementById(`badge-${idx}`);
-  zone.classList.add('has-image');
-  badge.textContent = input.files.length;
-  const reader = new FileReader();
-  reader.onload = e => {
-    let preview = zone.querySelector('.photo-preview');
-    if (!preview) {
-      preview = document.createElement('img');
-      preview.className = 'photo-preview';
-      zone.insertBefore(preview, zone.firstChild);
-    }
-    preview.src = e.target.result;
-  };
-  reader.readAsDataURL(input.files[0]);
-}
-
-buildPhotoZones();
 
 // ── ISSUES ─────────────────────────────────────────────────────────────
 let issueCount = 0;
@@ -1195,8 +1078,7 @@ function resetForm() {
   document.getElementById('sigLine').textContent = 'Driver signature pending…';
   checkStates = {};
   buildChecklist();
-  document.getElementById('photoZones').innerHTML = '';
-  buildPhotoZones();
+
   document.getElementById('issueList').innerHTML = '';
   issueCount = 0;
   setTripType('pre');
