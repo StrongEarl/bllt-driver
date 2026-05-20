@@ -753,8 +753,8 @@
     <div class="card">
       <div class="card-title">▸ Inspection Checklist</div>
       <div class="check-legend">
-        <div class="legend-item" onclick="markAll('ok')"><span class="legend-dot ok"></span> Click = OK / Pass</div>
-        <div class="legend-item" onclick="markAll('issue')"><span class="legend-dot flag"></span> Double-click = Flag Issue</div>
+        <div class="legend-item"><span class="legend-dot ok"></span> Single click = OK / Pass</div>
+        <div class="legend-item"><span class="legend-dot flag"></span> Double-click = Flag + pick issue</div>
       </div>
       <div class="checklist" id="checklist">
         <!-- JS populates -->
@@ -763,13 +763,8 @@
 
 
 
-    <!-- Maintenance Issues -->
-    <div class="card">
-      <div class="card-title">▸ Maintenance Issues</div>
-      <p style="font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:1.2rem;">LIST ANY ISSUES THAT NEED TO BE ADDRESSED</p>
-      <div class="issue-list" id="issueList"></div>
-      <button class="add-issue-btn" onclick="addIssue()">＋ Add Maintenance Issue</button>
-    </div>
+
+
 
     <!-- Additional Notes -->
     <div class="card">
@@ -841,11 +836,10 @@ const CHECKLIST_ITEMS = [
 
 
 
-const ISSUE_TYPES = ['Engine', 'Transmission', 'Brakes', 'Tires', 'Lights', 'Body Damage', 'Electrical', 'HVAC', 'Fuel System', 'Suspension', 'Exhaust', 'Fluids', 'Safety Equipment', 'Other'];
-const PRIORITY = ['Low', 'Medium', 'High', 'Critical'];
 
 let tripType = 'pre';
-let checkStates = {}; // item: 'ok' | 'issue' | ''
+let checkStates = {}; // item: { status: 'ok'|'issue'|'', issueType: '' }
+let clickTimers = {};
 let logs = JSON.parse(localStorage.getItem('bllt_logs') || '[]');
 let currentFilter = 'all';
 let currentSearch = '';
@@ -908,69 +902,76 @@ function buildChecklist() {
   const el = document.getElementById('checklist');
   el.innerHTML = '';
   CHECKLIST_ITEMS.forEach(item => {
-    checkStates[item] = '';
+    checkStates[item] = { status: '', issueType: '' };
     const div = document.createElement('div');
     div.className = 'check-item';
     div.dataset.item = item;
-    div.innerHTML = `<div class="check-box"></div><span class="check-label">${item}</span>`;
-    div.addEventListener('click', () => cycleCheck(item));
+    div.innerHTML = `
+      <div class="check-item-top">
+        <div class="check-box"></div>
+        <span class="check-label">${item}</span>
+      </div>`;
+    div.addEventListener('click', (e) => {
+      if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT' || e.target.closest('select') || e.target.closest('input')) return;
+      if (clickTimers[item]) {
+        clearTimeout(clickTimers[item]);
+        delete clickTimers[item];
+        handleDoubleClick(item, div);
+      } else {
+        clickTimers[item] = setTimeout(() => {
+          delete clickTimers[item];
+          handleSingleClick(item, div);
+        }, 220);
+      }
+    });
     el.appendChild(div);
   });
 }
 
-function cycleCheck(item) {
-  const states = ['', 'ok', 'issue'];
-  const cur = checkStates[item] || '';
-  const next = states[(states.indexOf(cur) + 1) % states.length];
-  checkStates[item] = next;
-  const div = document.querySelector(`[data-item="${item}"]`);
-  div.className = 'check-item' + (next === 'ok' ? ' checked' : next === 'issue' ? ' issue' : '');
-  div.querySelector('.check-box').textContent = next === 'ok' ? '✓' : next === 'issue' ? '!' : '';
+function handleSingleClick(item, div) {
+  const s = checkStates[item];
+  if (s.status === 'issue') {
+    s.status = 'ok'; s.issueType = '';
+    div.className = 'check-item checked';
+    div.querySelector('.check-box').textContent = '✓';
+    removeIssueDropdown(div);
+  } else if (s.status === 'ok') {
+    s.status = ''; s.issueType = '';
+    div.className = 'check-item';
+    div.querySelector('.check-box').textContent = '';
+  } else {
+    s.status = 'ok';
+    div.className = 'check-item checked';
+    div.querySelector('.check-box').textContent = '✓';
+  }
 }
 
-function markAll(state) {
-  CHECKLIST_ITEMS.forEach(item => {
-    checkStates[item] = state;
-    const div = document.querySelector(`[data-item="${item}"]`);
-    if (div) {
-      div.className = 'check-item' + (state === 'ok' ? ' checked' : ' issue');
-      div.querySelector('.check-box').textContent = state === 'ok' ? '✓' : '!';
-    }
+function handleDoubleClick(item, div) {
+  checkStates[item] = { status: 'issue', issueType: '' };
+  div.className = 'check-item issue';
+  div.querySelector('.check-box').textContent = '!';
+  removeIssueDropdown(div);
+  const wrap = document.createElement('div');
+  wrap.className = 'issue-dropdown-wrap';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Describe the issue…';
+  input.style.cssText = 'width:100%;font-size:0.82rem;padding:0.4rem 0.6rem;border:1px solid var(--accent2);background:var(--bg);color:var(--text);border-radius:3px;margin-top:0.5rem;font-family:inherit;';
+  input.addEventListener('input', () => {
+    checkStates[item].issueType = input.value;
   });
+  input.addEventListener('click', e => e.stopPropagation());
+  wrap.appendChild(input);
+  div.appendChild(wrap);
+  setTimeout(() => input.focus(), 50);
+}
+
+function removeIssueDropdown(div) {
+  const w = div.querySelector('.issue-dropdown-wrap');
+  if (w) w.remove();
 }
 
 buildChecklist();
-
-// ── ISSUES ─────────────────────────────────────────────────────────────
-let issueCount = 0;
-
-function addIssue(type = '', desc = '', priority = '') {
-  issueCount++;
-  const id = `issue-${issueCount}`;
-  const list = document.getElementById('issueList');
-  const row = document.createElement('div');
-  row.className = 'issue-row';
-  row.id = id;
-  row.innerHTML = `
-    <select id="${id}-type">
-      <option value="">— Category —</option>
-      ${ISSUE_TYPES.map(t => `<option ${t===type?'selected':''}>${t}</option>`).join('')}
-    </select>
-    <textarea id="${id}-desc" placeholder="Describe the issue…">${desc}</textarea>
-    <div style="display:flex;flex-direction:column;gap:0.5rem">
-      <select id="${id}-priority" style="font-size:0.78rem;padding:0.3rem 0.6rem;">
-        ${PRIORITY.map(p => `<option ${p===priority?'selected':''}>${p}</option>`).join('')}
-      </select>
-      <button class="del-btn" onclick="removeIssue('${id}')">✕</button>
-    </div>
-  `;
-  list.appendChild(row);
-}
-
-function removeIssue(id) {
-  const el = document.getElementById(id);
-  if (el) { el.style.opacity='0'; el.style.transform='scale(0.95)'; el.style.transition='all 0.2s'; setTimeout(()=>el.remove(), 200); }
-}
 
 // ── SUBMIT ─────────────────────────────────────────────────────────────
 function submitForm() {
@@ -992,17 +993,10 @@ function submitForm() {
     return;
   }
 
-  // Collect issues
-  const issues = [];
-  document.querySelectorAll('.issue-row').forEach(row => {
-    const t = row.querySelector('[id$="-type"]').value;
-    const d = row.querySelector('[id$="-desc"]').value;
-    const p = row.querySelector('[id$="-priority"]').value;
-    if (t || d) issues.push({ type: t, desc: d, priority: p });
-  });
-
-  // Collect flagged checklist items
-  const flagged = Object.entries(checkStates).filter(([,v])=>v==='issue').map(([k])=>k);
+  // Collect flagged checklist items with issue types
+  const flagged = Object.entries(checkStates)
+    .filter(([,v]) => v.status === 'issue')
+    .map(([k,v]) => v.issueType ? `${k} (${v.issueType})` : k);
 
   const entry = {
     id: Date.now(),
@@ -1017,9 +1011,8 @@ function submitForm() {
     odometer: document.getElementById('odometer').value,
     checkStates: {...checkStates},
     flagged,
-    issues,
     notes: document.getElementById('additionalNotes').value.trim(),
-    hasIssues: issues.length > 0 || flagged.length > 0
+    hasIssues: flagged.length > 0
   };
 
   logs.unshift(entry);
@@ -1047,7 +1040,6 @@ function submitForm() {
       time: entry.time,
       odometer: entry.odometer,
       flagged: entry.flagged,
-      issues: entry.issues,
       notes: entry.notes
     })
   })
@@ -1077,10 +1069,8 @@ function resetForm() {
   document.getElementById('inspTime').value = now.toTimeString().slice(0,5);
   document.getElementById('sigLine').textContent = 'Driver signature pending…';
   checkStates = {};
+  clickTimers = {};
   buildChecklist();
-
-  document.getElementById('issueList').innerHTML = '';
-  issueCount = 0;
   setTripType('pre');
 }
 
@@ -1112,7 +1102,7 @@ function renderLog() {
         <div class="log-meta">${l.driver} · ${dateStr}${l.time ? ' · '+l.time : ''}${l.odometer ? ' · '+Number(l.odometer).toLocaleString()+' mi' : ''}</div>
       </div>
       <div class="log-status">
-        ${l.hasIssues ? `<div class="issue-flag">⚠ ${l.issues.length + l.flagged.length} issue(s)</div>` : '<div style="font-family:DM Mono,monospace;font-size:0.65rem;color:var(--success);letter-spacing:1.5px">✓ No Issues</div>'}
+        ${l.hasIssues ? `<div class="issue-flag">⚠ ${l.flagged.length} issue(s)</div>` : '<div style="font-family:DM Mono,monospace;font-size:0.65rem;color:var(--success);letter-spacing:1.5px">✓ No Issues</div>'}
         <div style="font-family:DM Mono,monospace;font-size:0.62rem;color:var(--text-muted);letter-spacing:1px">VIN: ${(l.vin||'').slice(0,8)}…</div>
       </div>
     </div>`;
@@ -1129,8 +1119,7 @@ function viewEntry(id) {
     `Driver: ${l.driver}`,
     `Date: ${l.date} ${l.time}`,
     l.odometer ? `Odometer: ${Number(l.odometer).toLocaleString()} mi` : '',
-    l.flagged.length ? `\nFlagged Items: ${l.flagged.join(', ')}` : '',
-    l.issues.length ? `\nMaintenance Issues:\n${l.issues.map(i=>`  [${i.priority}] ${i.type}: ${i.desc}`).join('\n')}` : '',
+    l.flagged.length ? `\nFlagged Issues: ${l.flagged.join(', ')}` : '',
     l.notes ? `\nNotes: ${l.notes}` : ''
   ].filter(Boolean).join('\n');
   alert(msg);
